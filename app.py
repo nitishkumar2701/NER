@@ -418,4 +418,6 @@ if __name__ == '__main__':
         shutil.copy('index.html', html_path)
         print(f"Copied index.html to {html_path}")
     
-    app.run(debug=True)
+    # Configure for both local development and Render deployment
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
