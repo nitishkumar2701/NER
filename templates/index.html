@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioMedical Entity Recognition</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 900px;
+        }
+        
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.08), 0 0 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            padding: 3rem 0;
+            border-radius: 0 0 50px 50px;
+            margin-bottom: 2rem;
+        }
+        
+        .title-text {
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .subtitle-text {
+            opacity: 0.8;
+        }
+        
+        #textInput {
+            border-radius: 15px;
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        #textInput:focus {
+            border-color: #6a11cb;
+            box-shadow: 0 0 0 0.25rem rgba(106, 17, 203, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 12px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .entity-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result-text {
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        /* Entity Highlighting */
+        mark.chemical {
+            background-color: rgba(255, 193, 7, 0.3);
+            padding: 2px 5px;
+            border-radius: 4px;
+            border-bottom: 2px solid #ffc107;
+        }
+        
+        mark.disease {
+            background-color: rgba(220, 53, 69, 0.2);
+            padding: 2px 5px;
+            border-radius: 4px;
+            border-bottom: 2px solid #dc3545;
+        }
+        
+        mark.gene {
+            background-color: rgba(25, 135, 84, 0.2);
+            padding: 2px 5px;
+            border-radius: 4px;
+            border-bottom: 2px solid #198754;
+        }
+        
+        mark.species {
+            background-color: rgba(13, 110, 253, 0.2);
+            padding: 2px 5px;
+            border-radius: 4px;
+            border-bottom: 2px solid #0d6efd;
+        }
+        
+        .entity-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            margin: 5px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .chemical-badge {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .disease-badge {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .gene-badge {
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #badbcc;
+        }
+        
+        .species-badge {
+            background-color: #cfe2ff;
+            color: #084298;
+            border: 1px solid #b6d4fe;
+        }
+        
+        .loading-spinner {
+            margin: 20px auto;
+            display: none;
+        }
+        
+        .badge-count {
+            font-size: 1rem;
+            margin-left: 10px;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        /* Animation classes */
+        .fade-in {
+            animation: fadeIn 0.8s;
+        }
+        
+        .slide-up {
+            animation: slideInUp 0.5s;
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .shake-text {
+            animation: headShake 0.5s;
+        }
+        
+        /* Entity legend */
+        .entity-legend {
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+        
+        .legend-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .chemical-color {
+            background-color: rgba(255, 193, 7, 0.3);
+            border-bottom: 2px solid #ffc107;
+        }
+        
+        .disease-color {
+            background-color: rgba(220, 53, 69, 0.2);
+            border-bottom: 2px solid #dc3545;
+        }
+        
+        .gene-color {
+            background-color: rgba(25, 135, 84, 0.2);
+            border-bottom: 2px solid #198754;
+        }
+        
+        .species-color {
+            background-color: rgba(13, 110, 253, 0.2);
+            border-bottom: 2px solid #0d6efd;
+        }
+        
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        /* Model status indicator */
+        .model-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-ready {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .indicator-ready {
+            background-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header-section animate__animated animate__fadeIn">
+        <div class="container text-center">
+            <h1 class="title-text animate__animated animate__fadeInDown">
+                <i class="fas fa-dna"></i> BioMedical Entity Recognition
+            </h1>
+            <p class="subtitle-text animate__animated animate__fadeInUp">
+                Identify biomedical entities in scientific text using the PubTator-trained model
+            </p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Main Card -->
+        <div class="card mb-4 animate__animated animate__fadeInUp">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-3">
+                    <i class="fas fa-microscope"></i> Analyze Biomedical Text
+                </h4>
+                <p class="card-text text-muted">
+                    Enter biomedical text to identify and highlight entities like chemicals, diseases, genes, and species.
+                    Model trained on CDR_TrainingSet.PubTator.txt and CDR_DevelopmentSet.PubTator.txt datasets.
+                </p>
+                
+                <!-- Text Input -->
+                <div class="form-group mb-4">
+                    <textarea 
+                        id="textInput" 
+                        class="form-control" 
+                        rows="6" 
+                        placeholder="Enter biomedical text here... (e.g., 'Aspirin can be used to treat headaches and reduce fever.')"
+                    ></textarea>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button id="analyzeBtn" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Analyze Text
+                    </button>
+                </div>
+                
+                <!-- Loading Spinner -->
+                <div class="loading-spinner text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-primary">Analyzing text...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Card - Hidden initially -->
+        <div id="resultsCard" class="card entity-container animate__animated">
+            <div class="card-body p-4">
+                <h4 class="card-title mb-3">
+                    <i class="fas fa-vial"></i> Analysis Results
+                </h4>
+                
+                <!-- Entity Legend -->
+                <div class="entity-legend bg-light">
+                    <h6 class="fw-bold">Entity Types:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="legend-item">
+                                <div class="legend-color chemical-color"></div>
+                                <span>Chemical</span>
+                                <span id="chemicalCount" class="badge bg-warning text-dark badge-count">0</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color gene-color"></div>
+                                <span>Gene</span>
+                                <span id="geneCount" class="badge bg-success badge-count">0</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="legend-item">
+                                <div class="legend-color disease-color"></div>
+                                <span>Disease</span>
+                                <span id="diseaseCount" class="badge bg-danger badge-count">0</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color species-color"></div>
+                                <span>Species</span>
+                                <span id="speciesCount" class="badge bg-primary badge-count">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Highlighted Text Results -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Highlighted Text</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="highlightedText" class="result-text"></div>
+                    </div>
+                </div>
+                
+                <!-- Entity Lists -->
+                <div class="row">
+                    <!-- Chemicals -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-warning bg-opacity-25">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-flask"></i> Chemicals
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="chemicalEntities"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Diseases -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-danger bg-opacity-25">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-virus"></i> Diseases
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="diseaseEntities"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Genes -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-success bg-opacity-25">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-dna"></i> Genes
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="geneEntities"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Species -->
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary bg-opacity-25">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-paw"></i> Species
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="speciesEntities"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Model Status Indicator -->
+        <div class="model-status status-ready">
+            <span class="status-indicator indicator-ready pulse"></span>
+            <span>Model Ready</span>
+        </div>
+    </div>
+    
+    <!-- Example Button - Fixed Position -->
+    <div class="position-fixed bottom-0 start-0 p-3">
+        <button id="exampleBtn" class="btn btn-sm btn-secondary">
+            <i class="fas fa-lightbulb"></i> Show Example
+        </button>
+    </div>
+    
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const textInput = document.getElementById('textInput');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loadingSpinner = document.querySelector('.loading-spinner');
+            const resultsCard = document.getElementById('resultsCard');
+            const highlightedText = document.getElementById('highlightedText');
+            const exampleBtn = document.getElementById('exampleBtn');
+            
+            // Entity containers
+            const chemicalEntities = document.getElementById('chemicalEntities');
+            const diseaseEntities = document.getElementById('diseaseEntities');
+            const geneEntities = document.getElementById('geneEntities');
+            const speciesEntities = document.getElementById('speciesEntities');
+            
+            // Entity counters
+            const chemicalCount = document.getElementById('chemicalCount');
+            const diseaseCount = document.getElementById('diseaseCount');
+            const geneCount = document.getElementById('geneCount');
+            const speciesCount = document.getElementById('speciesCount');
+            
+            // Example biomedical text
+            const exampleText = "Aspirin, acetaminophen, and ibuprofen are commonly used to treat headaches and fever. Studies in mice and rats have shown that these NSAIDs can affect the expression of COX1 and COX2 genes. In human patients with Alzheimer's disease, there is evidence that inflammation plays a role in disease progression.";
+            
+            // Show example text when example button is clicked
+            exampleBtn.addEventListener('click', function() {
+                textInput.value = exampleText;
+                textInput.classList.add('shake-text');
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    textInput.classList.remove('shake-text');
+                }, 1000);
+            });
+            
+            // Handle form submission
+            analyzeBtn.addEventListener('click', analyzeText);
+            
+            function analyzeText() {
+                const text = textInput.value.trim();
+                
+                if (text === '') {
+                    // Shake the input field to indicate error
+                    textInput.classList.add('shake-text');
+                    
+                    // Remove animation class after animation completes
+                    setTimeout(() => {
+                        textInput.classList.remove('shake-text');
+                    }, 1000);
+                    
+                    return;
+                }
+                
+                // Show loading spinner
+                loadingSpinner.style.display = 'block';
+                analyzeBtn.disabled = true;
+                
+                // Hide previous results
+                resultsCard.style.display = 'none';
+                
+                // Send request to backend
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        return;
+                    }
+                    
+                    // Display results
+                    displayResults(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingSpinner.style.display = 'none';
+                    analyzeBtn.disabled = false;
+                    alert('An error occurred during analysis. Please try again.');
+                });
+            }
+            
+            function displayResults(data) {
+                // Reset entity lists
+                chemicalEntities.innerHTML = '';
+                diseaseEntities.innerHTML = '';
+                geneEntities.innerHTML = '';
+                speciesEntities.innerHTML = '';
+                
+                // Reset counters
+                let chemCount = 0;
+                let disCount = 0;
+                let genCount = 0;
+                let speCount = 0;
+                
+                // Sort entities by position in text
+                const entities = data.entities.sort((a, b) => a.start - b.start);
+                
+                // Process entities and populate respective containers
+                entities.forEach(entity => {
+                    const entityBadge = document.createElement('div');
+                    entityBadge.className = `entity-badge ${entity.label.toLowerCase()}-badge`;
+                    entityBadge.textContent = entity.text;
+                    
+                    // Add badge to appropriate container based on entity type
+                    switch(entity.label.toLowerCase()) {
+                        case 'chemical':
+                            chemicalEntities.appendChild(entityBadge);
+                            chemCount++;
+                            break;
+                        case 'disease':
+                            diseaseEntities.appendChild(entityBadge);
+                            disCount++;
+                            break;
+                        case 'gene':
+                            geneEntities.appendChild(entityBadge);
+                            genCount++;
+                            break;
+                        case 'species':
+                            speciesEntities.appendChild(entityBadge);
+                            speCount++;
+                            break;
+                    }
+                });
+                
+                // Update counters
+                chemicalCount.textContent = chemCount;
+                diseaseCount.textContent = disCount;
+                geneCount.textContent = genCount;
+                speciesCount.textContent = speCount;
+                
+                // Set highlighted text from backend response
+                highlightedText.innerHTML = data.html_text;
+                
+                // Display the results card
+                resultsCard.style.display = 'block';
+                resultsCard.classList.add('animate__animated', 'animate__fadeIn');
+                
+                // Scroll to results
+                resultsCard.scrollIntoView({ behavior: 'smooth' });
+                
+                // Show no results message for empty sections
+                if (chemCount === 0) chemicalEntities.innerHTML = '<p class="text-muted">No chemical entities found.</p>';
+                if (disCount === 0) diseaseEntities.innerHTML = '<p class="text-muted">No disease entities found.</p>';
+                if (genCount === 0) geneEntities.innerHTML = '<p class="text-muted">No gene entities found.</p>';
+                if (speCount === 0) speciesEntities.innerHTML = '<p class="text-muted">No species entities found.</p>';
+            }
+            
+            // Enable Enter key to submit
+            textInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && event.ctrlKey) {
+                    analyzeText();
+                }
+            });
+            
+            // Display a tooltip for Ctrl+Enter shortcut
+            textInput.title = "Tip: Press Ctrl+Enter to analyze text";
+        });
+    </script>
+</body>
+</html>

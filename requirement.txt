@@ -1,0 +1,13 @@
+flask
+gunicorn
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+plotly
+requests
+tqdm
+spacy
+wheel
+
